@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ghidravol"
-version = "11.1"
+version = "11.3"
 authors = [
   { name="Ghidra Development Team" },
 ]
@@ -9,12 +13,12 @@ readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: Volatility Software License",
+    "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-#    "ghidratrace==11.1",
-#    "ghidralldb==11.1",
+#    "ghidratrace==11.3",
+#    "ghidralldb==11.3",
 ]
 
 [project.urls]
