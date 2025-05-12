@@ -1,8 +1,8 @@
 ## ###
-#  IP: Volatility License
+# IP: Volatility License
 ##
 import shlex
-import lldb
+import lldb  # type: ignore
 
 from ghidralldb import arch, commands, util
 from ghidralldb.commands import convert_errors
@@ -26,26 +26,34 @@ lldb.debugger.HandleCommand(
 
 
 @convert_errors
-def ghidra_trace_put_processes_vol(debugger, command, result, internal_dict):
+def ghidra_trace_put_processes_vol(debugger: lldb.SBDebugger, command: str,
+                               result: lldb.SBCommandReturnObject,
+                               internal_dict: Dict[str, Any]) -> None:
     """
     Put the list of processes into the trace's Process list.
     """
 
     set_physical_memory(True)
     radix = util.get_convenience_variable('output-radix')
-    commands.STATE.require_tx()
-    with commands.STATE.client.batch() as b:
+    if radix is None or radix == 'auto':
+        radix = "16"
+    radix = int(radix)
+
+    trace, tx = commands.STATE.require_tx()
+    with trace.client.batch() as b:
         if is_linux():
-            put_processes_vol_linux(commands.STATE, radix)
+            put_processes_vol_linux(trace, radix)
         if is_macos():
-            put_processes_vol_macos(commands.STATE, radix)
+            put_processes_vol_macos(trace, radix)
         if is_windows():
-            put_processes_vol_win(commands.STATE, radix)
+            put_processes_vol_win(trace, radix)
     set_physical_memory(False)
 
 
 @convert_errors
-def ghidra_trace_put_regions_vol(idebugger, command, result, internal_dict):
+def ghidra_trace_put_regions_vol(debugger: lldb.SBDebugger, command: str,
+                             result: lldb.SBCommandReturnObject,
+                             internal_dict: Dict[str, Any]) -> None:
     """
     Read the memory map, if applicable, and write to the trace's Regions
     """
@@ -57,37 +65,41 @@ def ghidra_trace_put_regions_vol(idebugger, command, result, internal_dict):
             "ghidra trace put-regions: missing required argument 'pid'")
     pid = args[0]
 
-    commands.STATE.require_tx()
-    with commands.STATE.client.batch() as b:
+    trace, tx = commands.STATE.require_tx()
+    with trace.client.batch() as b:
         if is_linux():
-            put_regions_vol_linux(commands.STATE, pid)
+            put_regions_vol_linux(trace, pid)
         if is_macos():
-            put_regions_vol_macos(commands.STATE, pid)
+            put_regions_vol_macos(trace, pid)
         if is_windows():
-            put_regions_vol_win(commands.STATE, pid)
+            put_regions_vol_win(trace, pid)
     set_physical_memory(False)
 
 
 @convert_errors
-def ghidra_trace_put_kmodules_vol(debugger, command, result, internal_dict):
+def ghidra_trace_put_kmodules_vol(debugger: lldb.SBDebugger, command: str,
+                             result: lldb.SBCommandReturnObject,
+                             internal_dict: Dict[str, Any]) -> None:
     """
     Gather object files, if applicable, and write to the trace's Modules
     """
 
     set_physical_memory(True)
-    commands.STATE.require_tx()
-    with commands.STATE.client.batch() as b:
+    trace, tx = commands.STATE.require_tx()
+    with trace.client.batch() as b:
         if is_linux():
-            put_kmodules_vol_linux(commands.STATE)
+            put_kmodules_vol_linux(trace)
         if is_macos():
-            put_kmodules_vol_macos(commands.STATE)
+            put_kmodules_vol_macos(trace)
         if is_windows():
-            put_kmodules_vol_win(commands.STATE)
+            put_kmodules_vol_win(trace)
     set_physical_memory(False)
 
 
 @convert_errors
-def ghidra_trace_put_modules_vol(debugger, command, result, internal_dict):
+def ghidra_trace_put_modules_vol(debugger: lldb.SBDebugger, command: str,
+                             result: lldb.SBCommandReturnObject,
+                             internal_dict: Dict[str, Any]) -> None:
     """
     Gather object files, if applicable, and write to the trace's Modules
     """
@@ -99,19 +111,21 @@ def ghidra_trace_put_modules_vol(debugger, command, result, internal_dict):
             "ghidra trace put-modules: missing required argument 'pid'")
     pid = args[0]
 
-    commands.STATE.require_tx()
-    with commands.STATE.client.batch() as b:
+    trace, tx = commands.STATE.require_tx()
+    with trace.client.batch() as b:
         if is_linux():
-            put_modules_vol_linux(commands.STATE, pid)
+            put_modules_vol_linux(trace, pid)
         if is_macos():
-            put_modules_vol_macos(commands.STATE, pid)
+            put_modules_vol_macos(trace, pid)
         if is_windows():
-            put_modules_vol_win(commands.STATE, pid)
+            put_modules_vol_win(trace, pid)
     set_physical_memory(False)
 
 
 @convert_errors
-def ghidra_trace_put_threads_vol(debugger, command, result, internal_dict):
+def ghidra_trace_put_threads_vol(debugger: lldb.SBDebugger, command: str,
+                             result: lldb.SBCommandReturnObject,
+                             internal_dict: Dict[str, Any]) -> None:
     """
     Put the current process's threads into the Ghidra trace
     """
@@ -123,35 +137,46 @@ def ghidra_trace_put_threads_vol(debugger, command, result, internal_dict):
             "ghidra trace put-threads: missing required argument 'pid'")
     pid = args[0]
     radix = util.get_convenience_variable('output-radix')
+    if radix is None or radix == 'auto':
+        radix = "16"
+    radix = int(radix)
 
-    commands.STATE.require_tx()
-    with commands.STATE.client.batch() as b:
+    trace, tx = commands.STATE.require_tx()
+    with trace.client.batch() as b:
         if is_linux():
-            put_threads_vol_linux(commands.STATE, pid, radix)
+            put_threads_vol_linux(trace, pid, radix)
         if is_macos():
-            put_threads_vol_macos(commands.STATE, pid, radix)
+            put_threads_vol_macos(trace, pid, radix)
         if is_windows():
-            put_threads_vol_win(commands.STATE, pid, radix)
+            put_threads_vol_win(trace, pid, radix)
     set_physical_memory(False)
 
 
 @convert_errors
-def ghidra_trace_put_all_vol(debugger, command, result, internal_dict):
+def ghidra_trace_put_all_vol(debugger: lldb.SBDebugger, command: str,
+                         result: lldb.SBCommandReturnObject,
+                         internal_dict: Dict[str, Any]) -> None:
     """
     Put everything currently selected into the Ghidra trace
     """
 
     set_physical_memory(True)
     radix = util.get_convenience_variable('output-radix')
-    commands.STATE.require_tx()
-    with commands.STATE.client.batch() as b:
+    if radix is None or radix == 'auto':
+        radix = "16"
+    radix = int(radix)
+
+    trace, tx = commands.STATE.require_tx()
+    with trace.client.batch() as b:
         if is_linux():
-            put_processes_vol_linux(commands.STATE, radix)
-            put_kmodules_vol_linux(commands.STATE)
-        if is_macos():
-            put_processes_vol_macos(commands.STATE, radix)
-            put_kmodules_vol_macos(commands.STATE)
-        if is_windows():
-            put_processes_vol_win(commands.STATE, radix)
-            put_kmodules_vol_win(commands.STATE)
+            put_processes_vol_linux(trace, radix)
+            put_kmodules_vol_linux(trace)
+        elif is_macos():
+            put_processes_vol_macos(trace, radix)
+            put_kmodules_vol_macos(trace)
+        elif is_windows():
+            put_processes_vol_win(trace, radix)
+            put_kmodules_vol_win(trace)
+        else:
+            print("UNKNOWN OS {get_osabi()}")
     set_physical_memory(False)

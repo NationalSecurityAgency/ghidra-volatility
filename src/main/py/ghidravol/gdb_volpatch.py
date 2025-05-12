@@ -1,7 +1,7 @@
 ## ###
-#  IP: Volatility License
+# IP: Volatility License
 ##
-import gdb
+import gdb  # type: ignore
 from ghidravol import util
 
 
@@ -19,9 +19,9 @@ def UrlLayer(
     name: str,
     metadata: Optional[Dict[str, Any]] = None
 ) -> interfaces.layers.DataLayerInterface:
-    #print(f"Config: {context.config}")
+    # print(f"Config: {context.config}")
     if context.config.get('plugins.stack.FileLayer.location') is not None:
-        location = context.config['plugins.stack.FileLayer.location']
+        location = str(context.config['plugins.stack.FileLayer.location'])
         if location.startswith("vol:"):
             return GdbLayer(context, config_path, name, metadata)
     return FileLayer(context, config_path, name, metadata)
@@ -65,9 +65,9 @@ class GdbLayer(interfaces.layers.DataLayerInterface):
         except gdb.MemoryError:
             return False
 
-    def read(self, offset: int, length: int, pad: bool = False) -> bytes:
+    def read(self, offset: int, length: int, pad: bool = False) -> Optional[bytes]:
         """Reads from the file at offset for length."""
-        #print(f"READ {hex(offset)}:{hex(length)}")
+        # print(f"READ {hex(offset)}:{hex(length)}")
         if not self.is_valid(offset, length):
             invalid_address = offset
             if self.minimum_address < offset <= self.maximum_address:
@@ -81,7 +81,7 @@ class GdbLayer(interfaces.layers.DataLayerInterface):
             if offset == 0xdbace000:
                 frame = gdb.selected_frame()
                 if frame is not None:
-                    offset = frame.read_register("cr3")
+                    offset = int(frame.read_register("cr3"))
             return bytes(inf.read_memory(offset, length))
         except Exception as e:
             print(f"Error reading {offset}:{length} : {e}")

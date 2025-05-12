@@ -1,5 +1,5 @@
 ## ###
-#  IP: Volatility License
+# IP: Volatility License
 ##
 from contextlib import contextmanager
 import inspect
@@ -9,46 +9,28 @@ import time
 
 from ghidratrace import sch
 from ghidratrace.client import Client, Address, AddressRange, TraceObject
-import psutil
+import psutil  # type: ignore
 
-import gdb
+import gdb  # type: ignore
 
 from ghidragdb import arch, commands, hooks, methods, util
 from ghidragdb.commands import cmd
 
-SUBMODEL_PATH = "Volatility"
-PROCESSES_PATH = SUBMODEL_PATH + '.Processes'
-PROCESS_KEY_PATTERN = '[{pid}]'
-PROCESS_PATTERN = PROCESSES_PATH + PROCESS_KEY_PATTERN
-PROC_BREAKS_PATTERN = PROCESS_PATTERN + '.Breakpoints'
-PROC_BREAK_KEY_PATTERN = '[{breaknum}.{locnum}]'
-THREADS_PATTERN = PROCESS_PATTERN + '.Threads'
-THREAD_KEY_PATTERN = '[{tnum}]'
-THREAD_PATTERN = THREADS_PATTERN + THREAD_KEY_PATTERN
-MEMORY_PATTERN = PROCESS_PATTERN + '.Memory'
-REGION_KEY_PATTERN = '[{start:08x}]'
-REGION_PATTERN = MEMORY_PATTERN + REGION_KEY_PATTERN
-KMODULES_PATH = SUBMODEL_PATH + '.Modules'
-KMODULE_KEY_PATTERN = '[{modpath}]'
-KMODULE_PATTERN = KMODULES_PATH + KMODULE_KEY_PATTERN
-MODULES_PATTERN = PROCESS_PATTERN + '.Modules'
-MODULE_KEY_PATTERN = '[{modpath}]'
-MODULE_PATTERN = MODULES_PATTERN + MODULE_KEY_PATTERN
-SECTIONS_ADD_PATTERN = '.Sections'
-SECTION_KEY_PATTERN = '[{secname}]'
-SECTION_ADD_PATTERN = SECTIONS_ADD_PATTERN + SECTION_KEY_PATTERN
 
-
-def start_trace(name):
+def start_trace(name: str) -> None:
     language, compiler = arch.compute_ghidra_lcsp()
-    commands.STATE.trace = commands.STATE.client.create_trace(
-        name, language, compiler)
+    commands.STATE.trace = commands.STATE.require_client().create_trace(
+        name, language, compiler, extra=commands.Extra())
     # TODO: Is adding an attribute like this recommended in Python?
-    commands.STATE.trace.memory_mapper = arch.compute_memory_mapper(language)
-    commands.STATE.trace.register_mapper = arch.compute_register_mapper(
+    commands.STATE.trace.extra.memory_mapper = arch.compute_memory_mapper(
+        language)
+    commands.STATE.trace.extra.register_mapper = arch.compute_register_mapper(
         language)
 
-    parent = os.path.dirname(inspect.getfile(inspect.currentframe()))
+    frame = inspect.currentframe()
+    if frame is None:
+        raise AssertionError("cannot locate schema.xml")
+    parent = os.path.dirname(inspect.getfile(frame))
     schema_fn = os.path.join(parent, 'schema_vol_gdb.xml')
     with open(schema_fn, 'r') as schema_file:
         schema_xml = schema_file.read()
@@ -58,8 +40,9 @@ def start_trace(name):
     gdb.set_convenience_variable('_ghidra_tracing', True)
 
 
-@cmd('ghidra trace start', '-ghidra-trace-start', gdb.COMMAND_DATA, False)
-def ghidra_trace_start(name=None, *, is_mi, **kwargs):
+@cmd('ghidra trace connect', '-ghidra-trace-connect', gdb.COMMAND_SUPPORT,
+     False)
+def ghidra_trace_connect(address: str, *, is_mi: bool, **kwargs) -> None:
     """Start a Trace in Ghidra"""
 
     commands.STATE.require_client()
@@ -69,22 +52,22 @@ def ghidra_trace_start(name=None, *, is_mi, **kwargs):
     start_trace(name)
 
 
-def set_physical_memory(on):
+def set_physical_memory(on: bool) -> None:
     val = "1" if on else "0"
     cmd = f"maintenance packet Qqemu.PhyMemMode:{val}"
     gdb.execute(cmd)
 
 
-def is_linux():
+def is_linux() -> bool:
     osabi = arch.get_osabi()
     return osabi == "GNU/Linux"
 
 
-def is_macos():
+def is_macos() -> bool:
     osabi = arch.get_osabi()
     return osabi == "Darwin"
 
 
-def is_windows():
+def is_windows() -> bool:
     osabi = arch.get_osabi()
-    return osabi == "Windows" or osabi == "Cygwin"
+    return osabi == "windows" or osabi == "Cygwin"

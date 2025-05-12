@@ -1,9 +1,9 @@
 ## ###
-#  IP: Volatility License
+# IP: Volatility License
 ##
 import datetime
 import logging
-from typing import Callable, Iterable, List, Type
+from typing import Callable, Iterable, Optional, List, Type
 
 from volatility3.framework import renderers, interfaces, layers, exceptions, constants
 from volatility3.framework.configuration import requirements
@@ -11,7 +11,7 @@ from volatility3.framework.objects import utility
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows.extensions import pe
-from volatility3.plugins import timeliner
+from volatility3.plugins import timeliner  # type: ignore
 
 vollog = logging.getLogger(__name__)
 
@@ -79,10 +79,10 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             vollog.debug(
                 f"Unable to dump PE with pid {proc.UniqueProcessId}: {excp}")
 
-        return file_handle
+        return file_handle  # type: ignore
 
     @classmethod
-    def create_pid_filter(cls, pid_list: List[int] = None, exclude: bool = False) -> Callable[
+    def create_pid_filter(cls, pid_list: Optional[List[int]] = None, exclude: bool = False) -> Callable[
             [interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process IDs.
@@ -94,7 +94,7 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        def filter_func(_): return False
+        def filter_func(_): return False # type: ignore
         # FIXME: mypy #4973 or #2608
         pid_list = pid_list or []
         filter_list = [x for x in pid_list if x is not None]
@@ -106,7 +106,7 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         return filter_func
 
     @classmethod
-    def create_name_filter(cls, name_list: List[str] = None, exclude: bool = False) -> Callable[
+    def create_name_filter(cls, name_list: Optional[List[str]] = None, exclude: bool = False) -> Callable[
             [interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process names.
@@ -117,7 +117,7 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        def filter_func(_): return False
+        def filter_func(_): return False # type: ignore
         # FIXME: mypy #4973 or #2608
         name_list = name_list or []
         filter_list = [x for x in name_list if x is not None]
@@ -139,7 +139,7 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                        symbol_table: str,
                        filter_func: Callable[[interfaces.objects.ObjectInterface], bool] = lambda _: False, include_threads: bool = True) -> \
             Iterable[interfaces.objects.ObjectInterface]:
-            # include threads here?
+        # include threads here?
         """Lists all the processes in the primary layer that are in the pid
         config option.
 
@@ -190,14 +190,14 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         # maybe don't even need the include_threads?
             # if include_threads:
-                #print("hit if include threads?")
+                # print("hit if include threads?")
                 # yield from proc.Pcb.ThreadListHead
 
                 # never hits this?^ indentation seems right
 
     def _generator(self):
 
-        kernel = self.context.modules[self.config['kernel']]
+        kernel = self.context.modules[self.config['kernel']] # type: ignore
 
         pe_table_name = intermed.IntermediateSymbolTable.create(self.context,
                                                                 self.config_path,
@@ -206,20 +206,20 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                                                                 class_types=pe.class_types)
 
         memory = self.context.layers[kernel.layer_name]
-        if not isinstance(memory, layers.intel.Intel):
+        if not isinstance(memory, layers.intel.Intel):  # type: ignore
             raise TypeError("Primary layer is not an intel layer")
 
         for thread in self.list_processes(self.context,
                                           kernel.layer_name,
                                           kernel.symbol_table_name,
                                           filter_func=self.create_pid_filter(self.config.get('pid', None)), include_threads=True):
-                                         # , ,include_threads: bool = True
-                                        # added include threads here
+            # , ,include_threads: bool = True
+            # added include threads here
 
             # if not self.config.get('physical', self.PHYSICAL_DEFAULT):
-                #offset = thread.vol.offset
+            # offset = thread.vol.offset
             # else:
-                #(_, _, offset, _, _) = list(memory.mapping(offset = thread.vol.offset, length = 0))[0]
+            # (_, _, offset, _, _) = list(memory.mapping(offset = thread.vol.offset, length = 0))[0]
             # ^figure out offset later!
             file_output = "Disabled"
 
@@ -237,7 +237,7 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         # All UniqueProcessId... (process changed to threads) in this yield func.
             except exceptions.InvalidAddressException:
                 vollog.info(
-                    f"Invalid process found at address: {proc.vol.offset:x}. Skipping")
+                    f"Invalid process found at address: {thread.Cid:x}. Skipping")
 
     def generate_timeline(self):
         for row in self._generator():
@@ -269,7 +269,7 @@ class TsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         while nxt.is_valid() and nxt.obj_offset not in seen:
 
             # Instantiate the object
-            item = obj.Object(type, offset=nxt.obj_offset - offset,
+            item = nxt.Object(type, offset=nxt.obj_offset - offset,
                               vm=self.obj_vm,
                               parent=self.obj_parent,
                               native_vm=self.obj_native_vm,

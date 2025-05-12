@@ -3,7 +3,7 @@
 ##
 from concurrent.futures import Future, ThreadPoolExecutor
 import re
-import lldb
+import lldb # type: ignore
 
 from ghidratrace import sch
 from ghidratrace.client import (
@@ -35,21 +35,21 @@ class VolThreadContainer(TraceObject):
 
 
 @REGISTRY.method(action='refresh', display="Refresh Target Processes")
-def refresh_vol_processes(node: VolProcessContainer):
+def refresh_vol_processes(node: VolProcessContainer) -> None:
     """Refresh the list of processes in the target kernel."""
     with commands.open_tracked_tx('Refresh Processes'):
         util.get_debugger().HandleCommand('ghidra trace put-processes-vol')
 
 
 @REGISTRY.method(action='refresh', display="Refresh Kernel Modules")
-def refresh_vol_kmodules(node: VolKModuleContainer):
+def refresh_vol_kmodules(node: VolKModuleContainer) -> None:
     """Refresh the modules list for the target kernel."""
     with commands.open_tracked_tx('Refresh Modules'):
         util.get_debugger().HandleCommand('ghidra trace put-kmodules-vol')
 
 
 @REGISTRY.method(action='refresh', display="Refresh Process Threads")
-def refresh_vol_threads(node: VolThreadContainer):
+def refresh_vol_threads(node: VolThreadContainer) -> None:
     """Refresh the list of threads in the process."""
     with commands.open_tracked_tx('Refresh Threads'):
         proc: lldb.SBProcess = util.get_process()
@@ -58,7 +58,7 @@ def refresh_vol_threads(node: VolThreadContainer):
 
 
 @REGISTRY.method(action='refresh', display="Refresh Process Modules")
-def refresh_vol_modules(node: VolModuleContainer):
+def refresh_vol_modules(node: VolModuleContainer) -> None:
     """Refresh the modules list for the process."""
     with commands.open_tracked_tx('Refresh Modules'):
         proc: lldb.SBProcess = util.get_process()
@@ -67,7 +67,7 @@ def refresh_vol_modules(node: VolModuleContainer):
 
 
 @REGISTRY.method(action='refresh', display="Refresh Volatility")
-def refresh_vol_all(node: VolatilityRoot):
+def refresh_vol_all(node: VolatilityRoot) -> None:
     """Refresh the set of kernel lists."""
     with commands.open_tracked_tx('Refresh Volatility'):
         util.get_debugger().HandleCommand('ghidra trace put-all-vol')

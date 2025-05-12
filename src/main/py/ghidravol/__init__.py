@@ -1,9 +1,14 @@
 ## ###
-#  IP: Volatility License
+# IP: Volatility License
 ##
+from . import volcmd, tslist
+from . import commands_linux, commands_macos, commands_windows
+from typing import Optional, Type
+
+
 def try_gdb():
     try:
-        import gdb
+        import gdb  # type: ignore
         return True
     except:
         return False
@@ -21,14 +26,11 @@ else:
     import ghidravol.lldb_vol as vol
 
 
-from . import commands_linux, commands_macos, commands_windows
-from . import volcmd, tslist
-
-DebuggerLayer = None
+DebuggerLayer: Optional[Type] = None
 
 if IS_GDB:
     from . import gdb_commands
-    DebuggerLayer = volpatch.GdbLayer
+    DebuggerLayer = volpatch.GdbLayer  # type: ignore
 else:
     from . import lldb_commands
-    DebuggerLayer = volpatch.LldbLayer
+    DebuggerLayer = volpatch.LldbLayer  # type: ignore

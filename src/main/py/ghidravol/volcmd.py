@@ -1,5 +1,5 @@
 ## ###
-#  IP: Volatility License
+# IP: Volatility License
 ##
 import argparse
 import inspect
@@ -14,7 +14,7 @@ import tempfile
 import traceback
 
 from functools import wraps
-from typing import Any, Callable, Dict, Type, Union, List, Tuple
+from typing import Any, Callable, Dict, Optional, Sequence, Type, Union, List, Tuple
 from urllib import parse, request
 
 import volatility3.plugins
@@ -27,30 +27,32 @@ from volatility3.framework.automagic import stacker
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 
-volatility3.framework.require_interface_version(2, 0, 0)
+volatility3.framework.require_interface_version(2, 0, 0)  # type: ignore
 volatility3.plugins.__path__ = constants.PLUGINS_PATH
 failures = framework.import_files(volatility3.plugins, True)
 
 print(sys.version)
 
-#vol_mnt = os.environ.get("VOL_MNT", "file://////Users//dbm//vmware//Win10x64.vmwarevm//Win10x64-Snapshot2.vmem")
-vol_mnt = os.environ.get("VOL_MNT", "vol:////")
-parent = os.path.dirname(inspect.getfile(inspect.currentframe()))
-vol_cfg = os.environ.get("VOL_CFG", parent+"/config/")
+vol_mnt = os.environ.get("OPT_VOL_MNT", "vol:////")
+frame = inspect.currentframe()
+if frame is None:
+    raise AssertionError("cannot locate schema.xml")
+parent = os.path.dirname(inspect.getfile(frame))
+vol_cfg = os.environ.get("OPT_VOL_CFG", parent+"/config")
 
 
 class PrintedProgress(object):
     def __init__(self):
         self._max_message_len = 0
 
-    def __call__(self, progress: Union[int, float], description: str = None):
+    def __call__(self, progress: Union[int, float], description: Optional[str] = None):
         message = f"\rProgress: {round(progress, 2): 7.2f}\t\t{description or ''}"
         message_len = len(message)
         self._max_message_len = max([self._max_message_len, message_len])
         print(message, end=(" " * (self._max_message_len - message_len)) + "\r")
 
 
-def vol(cmd_args):
+def vol(cmd_args: Sequence[str]) -> List[Dict[str,Any]]:
     progress_callback = PrintedProgress()
     plugin_list = framework.list_plugins()
     plugin = plugin_list[cmd_args[0]]
@@ -77,7 +79,7 @@ def vol(cmd_args):
 
     config = cmd_args[0]
     config = config.split('.')[0]
-    path = vol_cfg + config + ".config"
+    path = vol_cfg + "/" + config + ".config"
 
     with open(path, "r") as f:
         json_val = json.load(f)
@@ -87,7 +89,7 @@ def vol(cmd_args):
         )
 
     # It should be up to the UI to determine which automagics to run, so this is before BACK TO THE FRAMEWORK
-    automagics = automagic.choose_automagic(automagics, plugin)
+    automagics = automagic.choose_automagic(automagics, plugin)  # type: ignore
 
     if ctx.config.get("automagic.LayerStacker.stackers", None) is None:
         ctx.config["automagic.LayerStacker.stackers"] = stacker.choose_os_stackers(
@@ -100,11 +102,11 @@ def vol(cmd_args):
 
         constructed = plugins.construct_plugin(
             ctx,
-            automagics,
+            automagics,  # type: ignore
             plugin,
             base_config_path,
             progress_callback,
-            None
+            None  # type: ignore
         )
     except exceptions.UnsatisfiedException as excp:
         print(excp)
@@ -123,13 +125,11 @@ def vol(cmd_args):
             return render(ret)
     except exceptions.VolatilityException as excp:
         print(excp)
+    return []
 
 
-def render(grid: interfaces.renderers.TreeGrid):
-    final_output: Tuple[
-        Dict[str, List[interfaces.renderers.TreeNode]],
-        List[interfaces.renderers.TreeNode],
-    ] = ({}, [])
+def render(grid: interfaces.renderers.TreeGrid) -> List[Dict[str, Any]]:
+    final_output: Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]] = ({}, [])
 
     _type_renderers = {
         format_hints.HexBytes: quoted_optional(hex_bytes_as_text),

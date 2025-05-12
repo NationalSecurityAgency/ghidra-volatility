@@ -1,7 +1,7 @@
 ## ###
-#  IP: Volatility License
+# IP: Volatility License
 ##
-import lldb
+import lldb  # type: ignore
 from ghidravol import util
 
 from typing import Any, Dict, IO, List, Optional, Union
@@ -17,9 +17,9 @@ def UrlLayer(
     name: str,
     metadata: Optional[Dict[str, Any]] = None
 ) -> interfaces.layers.DataLayerInterface:
-    #print(f"Config: {context.config}")
+    # print(f"Config: {context.config}")
     if context.config.get('plugins.stack.FileLayer.location') is not None:
-        location = context.config['plugins.stack.FileLayer.location']
+        location = str(context.config['plugins.stack.FileLayer.location'])
         if location.startswith("vol:"):
             return LldbLayer(context, config_path, name, metadata)
     return FileLayer(context, config_path, name, metadata)
@@ -64,9 +64,9 @@ class LldbLayer(interfaces.layers.DataLayerInterface):
         except Exception:
             return False
 
-    def read(self, offset: int, length: int, pad: bool = False) -> bytes:
+    def read(self, offset: int, length: int, pad: bool = False) -> Optional[bytes]:
         """Reads from the file at offset for length."""
-        #print(f"READ {hex(offset)}:{hex(length)}")
+        # print(f"READ {hex(offset)}:{hex(length)}")
         if not self.is_valid(offset, length):
             invalid_address = offset
             if self.minimum_address < offset <= self.maximum_address:
@@ -88,7 +88,7 @@ class LldbLayer(interfaces.layers.DataLayerInterface):
 
     def write(self, offset: int, data: bytes) -> None:
         error = lldb.SBError()
-        utit.get_process().WriteMemory(offset, data, error)
+        util.get_process().WriteMemory(offset, data, error)
 
 
 FileLayer = physical.FileLayer
